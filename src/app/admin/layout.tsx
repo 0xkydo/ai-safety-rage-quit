@@ -62,6 +62,12 @@ export default async function AdminLayout({
             Dashboard
           </Link>
           <Link
+            href="/admin/submissions"
+            className="text-text-secondary hover:text-amber transition-colors duration-150"
+          >
+            Submissions
+          </Link>
+          <Link
             href="/admin/new"
             className="text-text-secondary hover:text-amber transition-colors duration-150"
           >

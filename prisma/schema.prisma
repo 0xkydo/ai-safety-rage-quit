@@ -18,6 +18,51 @@ enum DepartureStatus {
   RUMORED
 }
 
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DUPLICATE
+}
+
+model Submission {
+  id                String           @id @default(cuid())
+  // The tweet where someone tagged the bot
+  mentionTweetId    String           @unique
+  mentionAuthor     String
+  mentionText       String?          @db.Text
+  // The parent tweet (the resignation announcement)
+  parentTweetId     String?
+  parentTweetUrl    String?
+  parentAuthor      String?
+  parentAuthorName  String?
+  parentText        String?          @db.Text
+  parentLikes       Int              @default(0)
+  parentRetweets    Int              @default(0)
+  parentReplies     Int              @default(0)
+  parentViews       Int              @default(0)
+  // Processing state
+  status            SubmissionStatus @default(PENDING)
+  reviewNote        String?          @db.Text
+  departureId       String?
+  // Bot reply tracking
+  botReplyTweetId   String?
+  botReplied        Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([status])
+  @@index([parentTweetId])
+}
+
+// Track the last processed mention ID for pagination
+model BotState {
+  id                String   @id @default("singleton")
+  lastMentionId     String?
+  lastPollAt        DateTime?
+  updatedAt         DateTime @updatedAt
+}
+
 model Departure {
   id              String          @id @default(cuid())
   personName      String
