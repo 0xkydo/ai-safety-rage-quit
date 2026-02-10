@@ -2,16 +2,19 @@ import { prisma } from "@/lib/db";
 import { COMPANY_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 
+const MIN_SCORE = 30;
+
 export async function TickerBar() {
-  let departures: { personName: string; company: string; departureDate: Date; publicityScore: number }[] = [];
+  let departures: { personName: string; role: string; company: string; departureDate: Date; publicityScore: number }[] = [];
 
   try {
     departures = await prisma.departure.findMany({
-      orderBy: { departureDate: "desc" },
-      take: 20,
+      where: { publicityScore: { gte: MIN_SCORE } },
+      orderBy: { publicityScore: "desc" },
       select: {
         id: true,
         personName: true,
+        role: true,
         company: true,
         departureDate: true,
         publicityScore: true,
@@ -25,10 +28,9 @@ export async function TickerBar() {
 
   const items = departures.map(
     (d) =>
-      `${d.personName} // ${COMPANY_LABELS[d.company]} // ${formatDate(d.departureDate)} // SCORE: ${d.publicityScore.toFixed(0)}`
+      `${d.personName}, ${d.role} // ${COMPANY_LABELS[d.company]} // ${formatDate(d.departureDate)} // SCORE: ${d.publicityScore.toFixed(0)}`
   );
 
-  // Duplicate for seamless loop
   const tickerContent = [...items, ...items].join("   ///   ");
 
   return (
