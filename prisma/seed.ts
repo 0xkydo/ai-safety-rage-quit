@@ -305,34 +305,7 @@ const departures: DepartureInput[] = [
     tweets: [],
     newsArticles: [],
   },
-  {
-    personName: "John Schulman",
-    role: "Co-founder, Reinforcement Learning Lead",
-    company: "OPENAI",
-    departureDate: new Date("2024-08-05"),
-    summary:
-      "Left to 'deepen focus on AI alignment' and 'return to hands-on technical work.' Created ChatGPT's RLHF approach. Joined Anthropic, then later left for Thinking Machines Lab.",
-    status: "CONFIRMED",
-    tweets: [
-      {
-        tweetId: "1820610863499509855",
-        url: "https://x.com/johnschulman2/status/1820610863499509855",
-        text: "I'm leaving OpenAI. This decision is not the result of any particular lack of support for safety at OpenAI.",
-        likes: 15000,
-        retweets: 2800,
-        replies: 1100,
-        views: 8000000,
-      },
-    ],
-    newsArticles: [
-      {
-        url: "https://www.cnbc.com/2024/08/06/openai-co-founder-john-schulman-says-he-will-join-rival-anthropic.html",
-        title: "OpenAI co-founder John Schulman says he will join rival Anthropic",
-        source: "CNBC",
-        publishedAt: new Date("2024-08-06"),
-      },
-    ],
-  },
+  // John Schulman removed - explicitly said departure was NOT about safety, career move
   {
     personName: "Jacob Hilton",
     role: "Alignment Team Researcher",
@@ -539,30 +512,7 @@ const departures: DepartureInput[] = [
     tweets: [],
     newsArticles: [],
   },
-  {
-    personName: "Suchir Balaji",
-    role: "AI Researcher & Whistleblower",
-    company: "OPENAI",
-    departureDate: new Date("2024-08-01"),
-    summary:
-      "Left after 4 years, becoming disillusioned with OpenAI's business practices. Became a whistleblower alleging copyright violations in ChatGPT training data. Found dead November 26, 2024 at age 26.",
-    status: "CONFIRMED",
-    tweets: [],
-    newsArticles: [
-      {
-        url: "https://www.pbs.org/newshour/nation/openai-whistleblower-who-raised-legal-concerns-about-chatgpts-datasets-has-died",
-        title: "OpenAI whistleblower who raised legal concerns about ChatGPT has died",
-        source: "PBS",
-        publishedAt: new Date("2024-12-14"),
-      },
-      {
-        url: "https://www.cnbc.com/2024/12/13/former-openai-researcher-and-whistleblower-found-dead-at-age-26.html",
-        title: "Former OpenAI researcher and whistleblower found dead at age 26",
-        source: "CNBC",
-        publishedAt: new Date("2024-12-13"),
-      },
-    ],
-  },
+  // Suchir Balaji removed - copyright whistleblower, not safety-related departure
   // ===== GOOGLE / DEEPMIND DEPARTURES =====
   {
     personName: "Geoffrey Hinton",
@@ -631,10 +581,10 @@ const departures: DepartureInput[] = [
   {
     personName: "Chris Olah",
     role: "Research Scientist (Interpretability)",
-    company: "GOOGLE_DEEPMIND",
+    company: "OPENAI",
     departureDate: new Date("2021-02-01"),
     summary:
-      "Left Google Brain to join Anthropic, where he now leads interpretability research. Pioneer of neural network interpretability and mechanistic interpretability.",
+      "Left to co-found Anthropic as part of the safety-motivated exodus. Pioneer of neural network interpretability and mechanistic interpretability. Now leads interpretability research at Anthropic.",
     status: "CONFIRMED",
     tweets: [],
     newsArticles: [],
