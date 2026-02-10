@@ -34,14 +34,12 @@ type StockDataPoint = {
 
 type StockData = {
   nvda: StockDataPoint[];
-  gspc: StockDataPoint[];
 };
 
-type MergedDataPoint = {
+type NvdaDataPoint = {
   timestamp: number;
   dateLabel: string;
   nvda: number | null;
-  gspc: number | null;
 };
 
 type DepartureScatterPoint = {
@@ -52,7 +50,6 @@ type DepartureScatterPoint = {
   publicityScore: number;
   timestamp: number;
   y: number;
-  size: number;
 };
 
 type TimelineChartProps = {
@@ -62,7 +59,6 @@ type TimelineChartProps = {
 // --- Constants ---
 
 const NVDA_COLOR = "#76B900";
-const SP500_COLOR = "#FF6B6B";
 const GRID_COLOR = "#222222";
 const TICK_COLOR = "#888888";
 const TICK_FONT_SIZE = 10;
@@ -97,11 +93,11 @@ type TooltipPayloadItem = {
   value: number;
   color: string;
   name: string;
-  payload: MergedDataPoint | DepartureScatterPoint;
+  payload: NvdaDataPoint | DepartureScatterPoint;
 };
 
 function isDeparturePayload(
-  payload: MergedDataPoint | DepartureScatterPoint
+  payload: NvdaDataPoint | DepartureScatterPoint
 ): payload is DepartureScatterPoint {
   return "personName" in payload;
 }
@@ -117,7 +113,6 @@ function UnifiedTooltipContent({
 }) {
   if (!active || !payload?.length) return null;
 
-  // Check if the first payload item is a departure scatter point
   const firstPayload = payload[0].payload;
   if (isDeparturePayload(firstPayload)) {
     return (
@@ -138,36 +133,22 @@ function UnifiedTooltipContent({
     );
   }
 
-  // Stock data tooltip
+  // NVDA tooltip
   if (label == null) return null;
-
-  // Filter to only stock line entries (not scatter)
-  const stockEntries = payload.filter(
-    (entry) => entry.dataKey === "nvda" || entry.dataKey === "gspc"
-  );
-  if (stockEntries.length === 0) return null;
+  const nvdaEntry = payload.find((entry) => entry.dataKey === "nvda");
+  if (!nvdaEntry || nvdaEntry.value == null) return null;
 
   return (
     <div className="bg-bg-secondary border border-border-primary rounded-sm p-3 text-xs min-w-[160px]">
-      <div className="text-text-primary font-medium mb-2">
+      <div className="text-text-primary font-medium mb-1">
         {formatTimestamp(label)}
       </div>
-      {stockEntries.map((entry) => {
-        if (entry.value == null) return null;
-        const labelText =
-          entry.dataKey === "nvda" ? "NVDA" : "S&P 500";
-        return (
-          <div
-            key={entry.dataKey}
-            className="flex items-center justify-between gap-4"
-          >
-            <span style={{ color: entry.color }}>{labelText}</span>
-            <span className="text-text-primary">
-              {entry.value.toFixed(1)}
-            </span>
-          </div>
-        );
-      })}
+      <div className="flex items-center justify-between gap-4">
+        <span style={{ color: NVDA_COLOR }}>NVDA</span>
+        <span className="text-text-primary">
+          {nvdaEntry.value.toFixed(0)}% of Jan 2020
+        </span>
+      </div>
     </div>
   );
 }
@@ -228,68 +209,29 @@ export function TimelineChart({ departures }: TimelineChartProps) {
     };
   }, []);
 
-  // Normalize stock data to index=100 at first data point
+  // Normalize NVDA to index=100 at first data point
   const normalizedNvda = useMemo(
     () => (stockData ? normalizeStockData(stockData.nvda) : []),
     [stockData]
   );
-  const normalizedGspc = useMemo(
-    () => (stockData ? normalizeStockData(stockData.gspc) : []),
-    [stockData]
-  );
 
-  // Merge stock data into a single array keyed by timestamp
-  const mergedStockData: MergedDataPoint[] = useMemo(() => {
-    const map = new Map<
-      number,
-      { nvda: number | null; gspc: number | null; dateLabel: string }
-    >();
-
-    for (const point of normalizedNvda) {
-      const existing = map.get(point.timestamp);
-      if (existing) {
-        existing.nvda = point.normalized;
-      } else {
-        map.set(point.timestamp, {
-          nvda: point.normalized,
-          gspc: null,
-          dateLabel: point.date,
-        });
-      }
-    }
-
-    for (const point of normalizedGspc) {
-      const existing = map.get(point.timestamp);
-      if (existing) {
-        existing.gspc = point.normalized;
-      } else {
-        map.set(point.timestamp, {
-          nvda: null,
-          gspc: point.normalized,
-          dateLabel: point.date,
-        });
-      }
-    }
-
-    return Array.from(map.entries())
-      .sort(([a], [b]) => a - b)
-      .map(([timestamp, values]) => ({
-        timestamp,
-        dateLabel: values.dateLabel,
-        nvda: values.nvda,
-        gspc: values.gspc,
-      }));
-  }, [normalizedNvda, normalizedGspc]);
+  // Build chart data from NVDA only
+  const chartData: NvdaDataPoint[] = useMemo(() => {
+    return normalizedNvda.map((point) => ({
+      timestamp: point.timestamp,
+      dateLabel: point.date,
+      nvda: point.normalized,
+    }));
+  }, [normalizedNvda]);
 
   // Max normalized value for right Y axis domain
   const maxNormalized = useMemo(() => {
     let max = 100;
-    for (const point of mergedStockData) {
+    for (const point of chartData) {
       if (point.nvda != null && point.nvda > max) max = point.nvda;
-      if (point.gspc != null && point.gspc > max) max = point.gspc;
     }
-    return Math.ceil(max / 100) * 100; // round up to nearest 100
-  }, [mergedStockData]);
+    return Math.ceil(max / 100) * 100;
+  }, [chartData]);
 
   // Departure scatter points
   const departurePoints: DepartureScatterPoint[] = useMemo(
@@ -298,20 +240,19 @@ export function TimelineChart({ departures }: TimelineChartProps) {
         ...d,
         timestamp: new Date(d.departureDate).getTime(),
         y: d.publicityScore,
-        size: Math.max(60, d.publicityScore * 4),
       })),
     [departures]
   );
 
-  // X axis domain: union of stock + departure timestamps
+  // X axis domain
   const xDomain: [number, number] = useMemo(() => {
     const allTimestamps = [
-      ...mergedStockData.map((d) => d.timestamp),
+      ...chartData.map((d) => d.timestamp),
       ...departurePoints.map((d) => d.timestamp),
     ];
     if (allTimestamps.length === 0) return [0, 1];
     return [Math.min(...allTimestamps), Math.max(...allTimestamps)];
-  }, [mergedStockData, departurePoints]);
+  }, [chartData, departurePoints]);
 
   const handleScatterClick = useCallback(
     (entry: DepartureScatterPoint) => {
@@ -323,8 +264,7 @@ export function TimelineChart({ departures }: TimelineChartProps) {
   // Legend entries
   const legendEntries: LegendEntry[] = useMemo(() => {
     const entries: LegendEntry[] = [
-      { color: NVDA_COLOR, label: "NVDA (normalized)", type: "line" },
-      { color: SP500_COLOR, label: "S&P 500 (normalized)", type: "line" },
+      { color: NVDA_COLOR, label: "NVDA (indexed to 100)", type: "line" },
     ];
     const companySet = new Set(departures.map((d) => d.company));
     for (const company of companySet) {
@@ -341,7 +281,7 @@ export function TimelineChart({ departures }: TimelineChartProps) {
     return (
       <div className="h-[500px] flex items-center justify-center">
         <p className="text-text-muted text-xs">
-          Failed to load stock data. Showing departures only.
+          Failed to load stock data.
         </p>
       </div>
     );
@@ -362,9 +302,8 @@ export function TimelineChart({ departures }: TimelineChartProps) {
         <ResponsiveContainer width="100%" height={500}>
           <ComposedChart
             margin={{ top: 20, right: 60, bottom: 20, left: 60 }}
-            data={mergedStockData}
+            data={chartData}
           >
-            {/* X Axis - shared timeline */}
             <XAxis
               dataKey="timestamp"
               type="number"
@@ -376,7 +315,7 @@ export function TimelineChart({ departures }: TimelineChartProps) {
               allowDuplicatedCategory={false}
             />
 
-            {/* Left Y Axis - Publicity Score (departures) */}
+            {/* Left Y Axis - Publicity Score */}
             <YAxis
               yAxisId="left"
               orientation="left"
@@ -393,7 +332,7 @@ export function TimelineChart({ departures }: TimelineChartProps) {
               }}
             />
 
-            {/* Right Y Axis - Normalized stock price */}
+            {/* Right Y Axis - NVDA normalized */}
             <YAxis
               yAxisId="right"
               orientation="right"
@@ -401,7 +340,7 @@ export function TimelineChart({ departures }: TimelineChartProps) {
               tick={{ fill: TICK_COLOR, fontSize: TICK_FONT_SIZE }}
               stroke={GRID_COLOR}
               label={{
-                value: "Stock Index (100 = Jan 2020)",
+                value: "NVDA (100 = Jan 2020)",
                 angle: 90,
                 position: "insideRight",
                 fill: "#555555",
@@ -428,19 +367,6 @@ export function TimelineChart({ departures }: TimelineChartProps) {
               activeDot={{ r: 4, fill: NVDA_COLOR }}
             />
 
-            {/* S&P 500 line */}
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="gspc"
-              stroke={SP500_COLOR}
-              strokeWidth={2}
-              dot={false}
-              connectNulls
-              name="S&P 500"
-              activeDot={{ r: 4, fill: SP500_COLOR }}
-            />
-
             {/* Departure scatter points */}
             <Scatter
               yAxisId="left"
@@ -462,7 +388,6 @@ export function TimelineChart({ departures }: TimelineChartProps) {
               ))}
             </Scatter>
 
-            {/* Hide default recharts legend, we render our own */}
             <Legend content={() => null} />
           </ComposedChart>
         </ResponsiveContainer>

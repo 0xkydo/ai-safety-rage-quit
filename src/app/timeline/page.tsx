@@ -43,7 +43,7 @@ export default async function TimelinePage() {
           DEPARTURE TIMELINE
         </h1>
         <p className="text-xs text-text-muted mt-1">
-          AI safety departures overlaid with NVDA and S&P 500 performance.
+          AI safety departures overlaid with NVDA stock performance.
           Dot size reflects publicity score. Click a departure to view details.
         </p>
       </div>
