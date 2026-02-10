@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Company {
+  OPENAI
+  ANTHROPIC
+  GOOGLE_DEEPMIND
+}
+
+enum DepartureStatus {
+  CONFIRMED
+  RUMORED
+}
+
+model Departure {
+  id              String          @id @default(cuid())
+  personName      String
+  role            String
+  company         Company
+  departureDate   DateTime
+  summary         String          @db.Text
+  profileImageUrl String?
+  status          DepartureStatus @default(CONFIRMED)
+  publicityScore  Float           @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  tweets          Tweet[]
+  newsArticles    NewsArticle[]
+
+  @@index([company])
+  @@index([departureDate])
+  @@index([publicityScore])
+}
+
+model Tweet {
+  id               String    @id @default(cuid())
+  tweetId          String    @unique
+  url              String
+  text             String?   @db.Text
+  likes            Int       @default(0)
+  retweets         Int       @default(0)
+  replies          Int       @default(0)
+  views            Int       @default(0)
+  metricsUpdatedAt DateTime?
+  departureId      String
+  departure        Departure @relation(fields: [departureId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([departureId])
+}
+
+model NewsArticle {
+  id          String    @id @default(cuid())
+  url         String
+  title       String
+  source      String
+  publishedAt DateTime?
+  departureId String
+  departure   Departure @relation(fields: [departureId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([departureId])
+}
